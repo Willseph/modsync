@@ -1,12 +1,10 @@
+using ModSyncApp;
 using ModSyncLib;
-using System.Collections.Generic;
-using static System.ComponentModel.Design.ObjectSelectorEditor;
 
 namespace ModSync
 {
     public partial class FormGameList : System.Windows.Forms.Form
     {
-        AddGameDialog addGameDialog;
         string? SelectedGame { get; set; }
 
         public FormGameList()
@@ -16,15 +14,17 @@ namespace ModSync
 
         private void ButtonAddGame_Click(object sender, EventArgs e)
         {
-            addGameDialog = new AddGameDialog();
-            var result = addGameDialog.ShowDialog(this);
-            switch (result)
+            using (var addGameDialog = new AddGameDialog())
             {
-                case DialogResult.OK:
-                    HandleAddGameDialogResult(addGameDialog);
-                    break;
+                var result = addGameDialog.ShowDialog(this);
+                switch (result)
+                {
+                    case DialogResult.OK:
+                        HandleAddGameDialogResult(addGameDialog);
+                        break;
+                }
+                addGameDialog.Close();
             }
-            addGameDialog.Close();
         }
 
         private void HandleAddGameDialogResult(AddGameDialog dialog)
@@ -121,7 +121,22 @@ namespace ModSync
 
         private void ButtonNewModPack_Click(object sender, EventArgs e)
         {
+            using (var addModPackDialog = new AddModPackDialog())
+            {
+                var result = addModPackDialog.ShowDialog(this);
+                switch (result)
+                {
+                    case DialogResult.OK:
+                        HandleAddModPackDialogResult(addModPackDialog);
+                        break;
+                }
+                addModPackDialog.Close();
+            }
+        }
 
+        private void HandleAddModPackDialogResult(AddModPackDialog dialog)
+        {
+            
         }
     }
 }
