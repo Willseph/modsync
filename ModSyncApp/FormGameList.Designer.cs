@@ -35,7 +35,6 @@
             ButtonRemoveGame = new Button();
             GroupBoxModPack = new GroupBox();
             ButtonDownloadAndSync = new Button();
-            ButtonVerifyLocalFiles = new Button();
             ModPackListBox = new ListBox();
             ButtonNewModPack = new Button();
             ProgressBar = new ProgressBar();
@@ -102,7 +101,6 @@
             // GroupBoxModPack
             // 
             GroupBoxModPack.Controls.Add(ButtonDownloadAndSync);
-            GroupBoxModPack.Controls.Add(ButtonVerifyLocalFiles);
             GroupBoxModPack.Controls.Add(ModPackListBox);
             GroupBoxModPack.Controls.Add(ButtonNewModPack);
             GroupBoxModPack.Controls.Add(ButtonRemoveModPack);
@@ -118,24 +116,13 @@
             // ButtonDownloadAndSync
             // 
             ButtonDownloadAndSync.Enabled = false;
-            ButtonDownloadAndSync.Location = new Point(335, 109);
+            ButtonDownloadAndSync.Location = new Point(335, 80);
             ButtonDownloadAndSync.Name = "ButtonDownloadAndSync";
             ButtonDownloadAndSync.Size = new Size(156, 23);
             ButtonDownloadAndSync.TabIndex = 5;
             ButtonDownloadAndSync.Text = "Download and Sync";
             ButtonDownloadAndSync.UseVisualStyleBackColor = true;
             ButtonDownloadAndSync.Click += ButtonDownloadAndSync_Click;
-            // 
-            // ButtonVerifyLocalFiles
-            // 
-            ButtonVerifyLocalFiles.Enabled = false;
-            ButtonVerifyLocalFiles.Location = new Point(335, 80);
-            ButtonVerifyLocalFiles.Name = "ButtonVerifyLocalFiles";
-            ButtonVerifyLocalFiles.Size = new Size(156, 23);
-            ButtonVerifyLocalFiles.TabIndex = 4;
-            ButtonVerifyLocalFiles.Text = "Verify Local Files";
-            ButtonVerifyLocalFiles.UseVisualStyleBackColor = true;
-            ButtonVerifyLocalFiles.Click += ButtonVerifyLocalFiles_Click;
             // 
             // ModPackListBox
             // 
@@ -147,6 +134,8 @@
             ModPackListBox.Size = new Size(323, 229);
             ModPackListBox.Sorted = true;
             ModPackListBox.TabIndex = 0;
+            ModPackListBox.SelectedIndexChanged += ModPackListBox_SelectedIndexChanged;
+            ModPackListBox.LostFocus += ModPackListBox_SelectedIndexChanged;
             // 
             // ButtonNewModPack
             // 
@@ -154,7 +143,7 @@
             ButtonNewModPack.Name = "ButtonNewModPack";
             ButtonNewModPack.Size = new Size(156, 23);
             ButtonNewModPack.TabIndex = 2;
-            ButtonNewModPack.Text = "New Mod Pack";
+            ButtonNewModPack.Text = "Add Mod Pack";
             ButtonNewModPack.UseVisualStyleBackColor = true;
             ButtonNewModPack.Click += ButtonNewModPack_Click;
             // 
@@ -205,7 +194,6 @@
         private Button ButtonNewModPack;
         private Button ButtonRemoveGame;
         private Button ButtonDownloadAndSync;
-        private Button ButtonVerifyLocalFiles;
         private ProgressBar ProgressBar;
         private Label LabelProgressStatus;
     }

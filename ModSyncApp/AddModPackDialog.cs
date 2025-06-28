@@ -1,14 +1,6 @@
 ﻿using ModSyncLib;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace ModSyncApp
 {
@@ -56,6 +48,7 @@ namespace ModSyncApp
                 return;
             }
 
+            DialogResult = DialogResult.OK;
             Close();
         }
 
@@ -103,7 +96,31 @@ namespace ModSyncApp
             {
                 throw new Exception("Invalid mod pack data at provided URL.");
             }
+
+            ValidateModPack(modPack);
+            modPack.Name = modPack.Name.Trim();
+            modPack.CreatorName = modPack.CreatorName.Trim();
+            modPack.RemoteUri = modPack.RemoteUri.Trim();
             return modPack;
+        }
+
+        private void ValidateModPack(ModPack modPack)
+        {
+            if (string.IsNullOrWhiteSpace(modPack.Name)
+                || modPack.CreatorName == null
+                || string.IsNullOrWhiteSpace(modPack.RemoteUri))
+            {
+                throw new Exception("Invalid mod pack data at provided URL.");
+            }
+
+            try
+            {
+                new Uri(modPack.RemoteUri);
+            }
+            catch
+            {
+                throw new Exception("Invalid mod pack data at provided URL.");
+            }
         }
 
         private void ShowErrorDialog(string error)
