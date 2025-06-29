@@ -327,8 +327,7 @@ namespace ModSync
 
             var archive = downloadModPackTask.Result ?? throw new Exception("An unknown error occurred while trying to sync this mod pack.");
 
-            var unpackTask = UnpackToModFolder(archive, payload.Game, sender as BackgroundWorker);
-            unpackTask.Wait();
+            UnpackToModFolder(archive, payload.Game, sender as BackgroundWorker);
         }
 
         private static ReferencedModPack RefetchModPack(ReferencedModPack modPack, BackgroundWorker? worker)
@@ -372,7 +371,7 @@ namespace ModSync
             }
         }
 
-        private async Task UnpackToModFolder(FileInfo archive, GameConfig gameConfig, BackgroundWorker? worker)
+        private void UnpackToModFolder(FileInfo archive, GameConfig gameConfig, BackgroundWorker? worker)
         {
             var modFolder = new DirectoryInfo(Path.Combine(gameConfig.GameDirectory, gameConfig.ModFolderName));
             worker?.ReportProgress(0, new ModPackDownloaderProgress
@@ -381,15 +380,15 @@ namespace ModSync
                 Status = $"Unpacking archive to {gameConfig.GameName} mod folder...",
             });
 
-            if(modFolder.Exists)
+            if(!modFolder.Exists)
             {
-                Directory.Delete(modFolder.FullName, true);
+                Directory.CreateDirectory(modFolder.FullName);
             }
-            Directory.CreateDirectory(modFolder.FullName);
 
             using Stream stream = File.OpenRead(archive.FullName);
             using var reader = ReaderFactory.Open(stream);
             reader.WriteAllToDirectory(modFolder.FullName, new ExtractionOptions {
+                Overwrite = true,
                 ExtractFullPath = true,
             });
 
