@@ -1,4 +1,6 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
+using System.Net.Http.Handlers;
 
 namespace ModSyncLib
 {
@@ -16,20 +18,61 @@ namespace ModSyncLib
             this.downloadDir = downloadDir;
         }
 
-        public async Task<FileInfo> DownloadModPack(ModPack modPack, DirectoryInfo modFolder, BackgroundWorker? worker = null)
+        public async Task<FileInfo> DownloadModPack(ModPack modPack, BackgroundWorker? worker = null)
         {
+            if(!downloadDir.Exists)
+            {
+                Directory.CreateDirectory(downloadDir.FullName);
+                downloadDir = new DirectoryInfo(downloadDir.FullName);
+            }
+
             worker?.ReportProgress(0, new ModPackDownloaderProgress
             {
                 ProgressIndeterminate = true,
                 Status = "Checking for cached mod pack archive...",
             });
+
             var localFile = LocalFileForModPack(modPack);
             if(IsModPackDownloaded(modPack))
             {
                 return localFile;
             }
 
-            throw new NotImplementedException();
+            worker?.ReportProgress(0, new ModPackDownloaderProgress
+            {
+                ProgressIndeterminate = false,
+                Status = "Downloading mod pack archive...",
+            });
+
+            using (var handler = new HttpClientHandler() { AllowAutoRedirect = true })
+            using (var ph = new ProgressMessageHandler(handler))
+            {
+                ph.HttpReceiveProgress += (_, args) =>
+                {
+                    if (args.TotalBytes == null) return;
+                    int percentage = (int)Math.Floor(100.0 * (double)args.BytesTransferred / (double)args.TotalBytes);
+                    worker?.ReportProgress(percentage, new ModPackDownloaderProgress
+                    {
+                        ProgressIndeterminate = false,
+                        Status = "Downloading mod pack archive...",
+                    });
+                };
+                using (var client = new HttpClient(ph))
+                using (var clientStream = await client.GetStreamAsync(modPack.RemoteUri))
+                using (var fileStream = new FileStream(localFile.FullName, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    await clientStream.CopyToAsync(fileStream);
+                }
+            }
+
+            localFile = LocalFileForModPack(modPack);
+            if (!IsModPackDownloaded(modPack))
+            {
+                File.Delete(localFile.FullName);
+                throw new Exception("Could not download mod pack archive. Hash may be incorrect.");
+            }
+
+            return localFile;
         }
 
         bool IsModPackDownloaded(ModPack modPack)
@@ -43,6 +86,11 @@ namespace ModSyncLib
             if (!modPackFile.Exists)
             {
                 return false;
+            }
+
+            if(modPack.FileHash == null)
+            {
+                return true;
             }
 
             var localFileHash = SHA1Helper.FileSHA1(modPackFile);

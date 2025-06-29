@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ModSyncLib
+﻿namespace ModSyncLib
 {
     public class Settings
     {
         public Dictionary<string, GameConfig> Games { get; set; } = new Dictionary<string, GameConfig>();
-        public Dictionary<string, List<ModPack>> ModPacks { get; set; } = new Dictionary<string, List<ModPack>>();
+        public Dictionary<string, List<ReferencedModPack>> ModPacks { get; set; } = new Dictionary<string, List<ReferencedModPack>>();
 
         public static Settings Default { get => new(); }
     }

@@ -1,5 +1,9 @@
 using ModSyncApp;
 using ModSyncLib;
+using Newtonsoft.Json;
+using SharpCompress.Common;
+using SharpCompress.Readers;
+using System;
 using System.ComponentModel;
 
 namespace ModSync
@@ -78,7 +82,7 @@ namespace ModSync
 
             ModPackListBox.Enabled = true;
             var settings = SettingsManager.Settings;
-            var gameModPacks = settings.ModPacks.ContainsKey(SelectedGame) ? settings.ModPacks[SelectedGame] : new List<ModPack>();
+            var gameModPacks = settings.ModPacks.ContainsKey(SelectedGame) ? settings.ModPacks[SelectedGame] : new List<ReferencedModPack>();
             foreach (var modPack in gameModPacks.OrderBy(x => x.Name.ToLowerInvariant()))
             {
                 ModPackListBox.Items.Add(modPack.Name);
@@ -225,22 +229,21 @@ namespace ModSync
             }
         }
 
-        private void HandleAddModPack(ModPack modPack)
+        private void HandleAddModPack(ReferencedModPack modPack)
         {
             if (SelectedGame == null)
             {
                 return;
             }
 
-            var modPackName = modPack.Name.Trim();
             var settings = SettingsManager.Settings;
             if (!settings.ModPacks.ContainsKey(SelectedGame))
             {
-                settings.ModPacks[SelectedGame] = new List<ModPack>();
+                settings.ModPacks[SelectedGame] = new List<ReferencedModPack>();
             }
-            if (settings.ModPacks[SelectedGame].Any(x => x.Name.Trim().ToLowerInvariant() == modPackName.ToLowerInvariant()))
+            if (settings.ModPacks[SelectedGame].Any(x => x.ModPackUrl == modPack.ModPackUrl))
             {
-                ShowErrorDialog($"Mod pack \"{modPackName}\" already exists for game {SelectedGame}");
+                ShowErrorDialog($"Mod pack URL \"{modPack.ModPackUrl}\" already exists for game {SelectedGame}");
                 return;
             }
 
@@ -267,12 +270,19 @@ namespace ModSync
             GroupBoxModPack.Enabled = true;
             ProgressBar.Visible = false;
             LabelProgressStatus.Visible = false;
+            var previousSelected = SelectedModPack;
+            UpdateModPackList();
+            if(previousSelected != null && ModPackListBox.Items.Contains(previousSelected)) {
+                ModPackListBox.SelectedItem = previousSelected;
+            }
 
             if (e.Error != null)
             {
                 ShowErrorDialog(e.Error.GetBaseException().Message);
                 return;
             }
+
+            MessageBox.Show($"Mod pack \"{previousSelected}\" successfully applied to {SelectedGame} files!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void DownloadModPackWorker_ProgressChanged(object? sender, ProgressChangedEventArgs e)
@@ -294,27 +304,107 @@ namespace ModSync
 
         private void DownloadModPackWorker_DoWork(object? sender, DoWorkEventArgs e)
         {
-            var payload = e.Argument as DownloadModPackWorkerPayload;
-            if (payload == null)
+            var payload = e.Argument as DownloadModPackWorkerPayload ?? throw new Exception("Failed to start background worker.");
+
+            // Re-fetching mod pack and updating cache
+            var updatedPack = RefetchModPack(payload.ModPack, sender as BackgroundWorker);
+            var settings = SettingsManager.Settings;
+            foreach(var game in settings.ModPacks.Keys)
             {
-                throw new Exception("Failed to start background worker.");
+                settings.ModPacks[game].RemoveAll(x => x.ModPackUrl == payload.ModPack.ModPackUrl);
+                settings.ModPacks[game].Add(updatedPack);
             }
+            SettingsManager.Settings = settings;
 
             var downloader = new ModPackDownloader(DownloadFolder);
-            Task downloadModPackTask = downloader.DownloadModPack(payload.ModPack, payload.ModFolder, sender as BackgroundWorker);
+            var downloadModPackTask = downloader.DownloadModPack(updatedPack, sender as BackgroundWorker);
             downloadModPackTask.Wait();
 
-            if (downloadModPackTask.IsFaulted)
+            if (!downloadModPackTask.IsCompletedSuccessfully)
             {
                 throw downloadModPackTask.Exception ?? new Exception("An unknown error occurred while trying to sync this mod pack.");
             }
+
+            var archive = downloadModPackTask.Result ?? throw new Exception("An unknown error occurred while trying to sync this mod pack.");
+
+            var unpackTask = UnpackToModFolder(archive, payload.Game, sender as BackgroundWorker);
+            unpackTask.Wait();
+        }
+
+        private static ReferencedModPack RefetchModPack(ReferencedModPack modPack, BackgroundWorker? worker)
+        {
+            worker?.ReportProgress(0, new ModPackDownloaderProgress
+            {
+                ProgressIndeterminate = true,
+                Status = "Fetching latest version of mod pack...",
+            });
+
+            var url = modPack.ModPackUrl;
+            using var client = new HttpClient();
+            var fetchTask = client.GetStringAsync(url);
+            fetchTask.Wait();
+            var json = fetchTask.Result ?? throw new Exception("Could not fetch up-to-date mod pack data.");
+            var fetchedModPack = JsonConvert.DeserializeObject<ModPack>(json) ?? throw new Exception("Could not fetch up-to-date mod pack data.");
+            ValidateModPack(fetchedModPack);
+            fetchedModPack.Name = fetchedModPack.Name.Trim();
+            fetchedModPack.CreatorName = fetchedModPack.CreatorName.Trim();
+            fetchedModPack.RemoteUri = fetchedModPack.RemoteUri.Trim();
+            return ReferencedModPack.FromModPack(url, fetchedModPack);
+        }
+
+        private static void ValidateModPack(ModPack modPack)
+        {
+            if (string.IsNullOrWhiteSpace(modPack.Name)
+                || modPack.CreatorName == null
+                || string.IsNullOrWhiteSpace(modPack.RemoteUri)
+                || string.IsNullOrWhiteSpace(modPack.FileHash))
+            {
+                throw new Exception("Could not fetch up-to-date mod pack data.");
+            }
+
+            try
+            {
+                var uri = new Uri(modPack.RemoteUri);
+            }
+            catch
+            {
+                throw new Exception("Could not fetch up-to-date mod pack data.");
+            }
+        }
+
+        private async Task UnpackToModFolder(FileInfo archive, GameConfig gameConfig, BackgroundWorker? worker)
+        {
+            var modFolder = new DirectoryInfo(Path.Combine(gameConfig.GameDirectory, gameConfig.ModFolderName));
+            worker?.ReportProgress(0, new ModPackDownloaderProgress
+            {
+                ProgressIndeterminate = true,
+                Status = $"Unpacking archive to {gameConfig.GameName} mod folder...",
+            });
+
+            if(modFolder.Exists)
+            {
+                Directory.Delete(modFolder.FullName, true);
+            }
+            Directory.CreateDirectory(modFolder.FullName);
+
+            using Stream stream = File.OpenRead(archive.FullName);
+            using var reader = ReaderFactory.Open(stream);
+            reader.WriteAllToDirectory(modFolder.FullName, new ExtractionOptions {
+                ExtractFullPath = true,
+            });
+
+            worker?.ReportProgress(100, new ModPackDownloaderProgress
+            {
+                ProgressIndeterminate = false,
+                Status = $"Complete",
+            });
         }
     }
 
     class DownloadModPackWorkerPayload
     {
         public GameConfig Game { get; set; }
-        public ModPack ModPack { get; set; }
+        public ReferencedModPack ModPack { get; set; }
         public DirectoryInfo ModFolder { get; set; }
     }
 }

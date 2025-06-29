@@ -6,7 +6,7 @@ namespace ModSyncApp
 {
     public partial class AddModPackDialog : Form
     {
-        public ModPack ModPack { get; private set; }
+        public ReferencedModPack ModPack { get; private set; }
         BackgroundWorker worker;
 
         public AddModPackDialog()
@@ -41,13 +41,14 @@ namespace ModSyncApp
                 return;
             }
 
-            ModPack = e.Result as ModPack;
-            if (ModPack == null)
+            var result = e.Result as ModPack;
+            if (result == null)
             {
                 ShowErrorDialog("Could not fetch valid mod pack at provided URL.");
                 return;
             }
 
+            ModPack = ReferencedModPack.FromModPack(TextBoxModPackUrl.Text.Trim(), result);
             DialogResult = DialogResult.OK;
             Close();
         }
@@ -83,28 +84,30 @@ namespace ModSyncApp
             }
         }
 
-        private async Task<ModPack> FetchModPack(string uri)
+        private static async Task<ModPack> FetchModPack(string uri)
         {
-            var client = new HttpClient();
-            var json = await client.GetStringAsync(uri);
-            if (json == null)
+            using (var client = new HttpClient())
             {
-                throw new Exception("Error fetching JSON data at provided URL.");
-            }
-            var modPack = JsonConvert.DeserializeObject<ModPack>(json);
-            if (modPack == null)
-            {
-                throw new Exception("Invalid mod pack data at provided URL.");
-            }
+                var json = await client.GetStringAsync(uri);
+                if (json == null)
+                {
+                    throw new Exception("Error fetching JSON data at provided URL.");
+                }
+                var modPack = JsonConvert.DeserializeObject<ModPack>(json);
+                if (modPack == null)
+                {
+                    throw new Exception("Invalid mod pack data at provided URL.");
+                }
 
-            ValidateModPack(modPack);
-            modPack.Name = modPack.Name.Trim();
-            modPack.CreatorName = modPack.CreatorName.Trim();
-            modPack.RemoteUri = modPack.RemoteUri.Trim();
-            return modPack;
+                ValidateModPack(modPack);
+                modPack.Name = modPack.Name.Trim();
+                modPack.CreatorName = modPack.CreatorName.Trim();
+                modPack.RemoteUri = modPack.RemoteUri.Trim();
+                return modPack;
+            }
         }
 
-        private void ValidateModPack(ModPack modPack)
+        private static void ValidateModPack(ModPack modPack)
         {
             if (string.IsNullOrWhiteSpace(modPack.Name)
                 || modPack.CreatorName == null
@@ -117,10 +120,6 @@ namespace ModSyncApp
             try
             {
                 var uri = new Uri(modPack.RemoteUri);
-                if(!uri.IsFile)
-                {
-                    throw new Exception("Mod pack remote URI must be a file.");
-                }
             }
             catch
             {
