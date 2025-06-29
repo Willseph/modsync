@@ -355,8 +355,7 @@ namespace ModSync
         {
             if (string.IsNullOrWhiteSpace(modPack.Name)
                 || modPack.CreatorName == null
-                || string.IsNullOrWhiteSpace(modPack.RemoteUri)
-                || string.IsNullOrWhiteSpace(modPack.FileHash))
+                || string.IsNullOrWhiteSpace(modPack.RemoteUri))
             {
                 throw new Exception("Could not fetch up-to-date mod pack data.");
             }

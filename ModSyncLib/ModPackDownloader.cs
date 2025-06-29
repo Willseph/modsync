@@ -66,9 +66,8 @@ namespace ModSyncLib
             }
 
             localFile = LocalFileForModPack(modPack);
-            if (!IsModPackDownloaded(modPack))
+            if (!localFile.Exists)
             {
-                File.Delete(localFile.FullName);
                 throw new Exception("Could not download mod pack archive. Hash may be incorrect.");
             }
 
@@ -83,14 +82,9 @@ namespace ModSyncLib
             }
 
             var modPackFile = LocalFileForModPack(modPack);
-            if (!modPackFile.Exists)
+            if (!modPackFile.Exists || modPack.FileHash == null)
             {
                 return false;
-            }
-
-            if(modPack.FileHash == null)
-            {
-                return true;
             }
 
             var localFileHash = SHA1Helper.FileSHA1(modPackFile);
