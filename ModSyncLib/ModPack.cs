@@ -7,5 +7,6 @@
         public DateTime CreationDate { get; set; }
         public DateTime LastUpdated { get; set; }
         public string RemoteUri { get; set; }
+        public string FileHash { get; set; }
     }
 }

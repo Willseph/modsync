@@ -31,7 +31,7 @@
             GameListBox = new ListBox();
             ButtonAddGame = new Button();
             ButtonRemoveModPack = new Button();
-            groupBox1 = new GroupBox();
+            GroupBoxGameList = new GroupBox();
             ButtonRemoveGame = new Button();
             GroupBoxModPack = new GroupBox();
             ButtonDownloadAndSync = new Button();
@@ -39,7 +39,7 @@
             ButtonNewModPack = new Button();
             ProgressBar = new ProgressBar();
             LabelProgressStatus = new Label();
-            groupBox1.SuspendLayout();
+            GroupBoxGameList.SuspendLayout();
             GroupBoxModPack.SuspendLayout();
             SuspendLayout();
             // 
@@ -75,17 +75,17 @@
             ButtonRemoveModPack.UseVisualStyleBackColor = true;
             ButtonRemoveModPack.Click += ButtonRemoveModPack_Click;
             // 
-            // groupBox1
+            // GroupBoxGameList
             // 
-            groupBox1.Controls.Add(ButtonRemoveGame);
-            groupBox1.Controls.Add(GameListBox);
-            groupBox1.Controls.Add(ButtonAddGame);
-            groupBox1.Location = new Point(12, 12);
-            groupBox1.Name = "groupBox1";
-            groupBox1.Size = new Size(296, 260);
-            groupBox1.TabIndex = 5;
-            groupBox1.TabStop = false;
-            groupBox1.Text = "Game list";
+            GroupBoxGameList.Controls.Add(ButtonRemoveGame);
+            GroupBoxGameList.Controls.Add(GameListBox);
+            GroupBoxGameList.Controls.Add(ButtonAddGame);
+            GroupBoxGameList.Location = new Point(12, 12);
+            GroupBoxGameList.Name = "GroupBoxGameList";
+            GroupBoxGameList.Size = new Size(296, 260);
+            GroupBoxGameList.TabIndex = 5;
+            GroupBoxGameList.TabStop = false;
+            GroupBoxGameList.Text = "Game list";
             // 
             // ButtonRemoveGame
             // 
@@ -152,7 +152,9 @@
             ProgressBar.Location = new Point(12, 300);
             ProgressBar.Name = "ProgressBar";
             ProgressBar.Size = new Size(812, 23);
+            ProgressBar.Style = ProgressBarStyle.Marquee;
             ProgressBar.TabIndex = 7;
+            ProgressBar.Visible = false;
             // 
             // LabelProgressStatus
             // 
@@ -161,6 +163,7 @@
             LabelProgressStatus.Name = "LabelProgressStatus";
             LabelProgressStatus.Size = new Size(0, 15);
             LabelProgressStatus.TabIndex = 8;
+            LabelProgressStatus.Visible = false;
             // 
             // FormGameList
             // 
@@ -170,14 +173,14 @@
             Controls.Add(LabelProgressStatus);
             Controls.Add(ProgressBar);
             Controls.Add(GroupBoxModPack);
-            Controls.Add(groupBox1);
+            Controls.Add(GroupBoxGameList);
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MaximizeBox = false;
             Name = "FormGameList";
             SizeGripStyle = SizeGripStyle.Hide;
             Text = "ModSync";
             Load += FormGameList_Load;
-            groupBox1.ResumeLayout(false);
+            GroupBoxGameList.ResumeLayout(false);
             GroupBoxModPack.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
@@ -188,7 +191,7 @@
         private ListBox GameListBox;
         private Button ButtonAddGame;
         private Button ButtonRemoveModPack;
-        private GroupBox groupBox1;
+        private GroupBox GroupBoxGameList;
         private GroupBox GroupBoxModPack;
         private ListBox ModPackListBox;
         private Button ButtonNewModPack;

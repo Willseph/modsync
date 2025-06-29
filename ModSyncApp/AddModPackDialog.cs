@@ -108,14 +108,19 @@ namespace ModSyncApp
         {
             if (string.IsNullOrWhiteSpace(modPack.Name)
                 || modPack.CreatorName == null
-                || string.IsNullOrWhiteSpace(modPack.RemoteUri))
+                || string.IsNullOrWhiteSpace(modPack.RemoteUri)
+                || string.IsNullOrWhiteSpace(modPack.FileHash))
             {
                 throw new Exception("Invalid mod pack data at provided URL.");
             }
 
             try
             {
-                new Uri(modPack.RemoteUri);
+                var uri = new Uri(modPack.RemoteUri);
+                if(!uri.IsFile)
+                {
+                    throw new Exception("Mod pack remote URI must be a file.");
+                }
             }
             catch
             {
